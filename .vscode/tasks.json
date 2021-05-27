@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Up origin code-server",
+      "command": "docker compose --file docker-compose.yml up -d",
+      "type": "shell",
+      "group": "build",
+      "options": {
+        "shell": { "executable": "pwsh.exe", "args": ["-Command"] }
+      }
+    },
+    {
+      "label": "lint Dockerfile",
+      "detail": "Dockerfile の構文チェック",
+      "command": "docker run --rm -i ghcr.io/hadolint/hadolint hadolint --ignore DL3007 --ignore DL3008 - < $(find -name 'Dockerfile')",
+      "type": "shell"
+    },
+    {
+      "label": "Docker Build",
+      "detail": "Dockerfileをビルドする",
+      "command": "docker build --file ./docker/Dockerfile --tag my_code-server ./docker",
+      "type": "shell",
+      "group": "build",
+      "dependsOrder": "sequence",
+      "dependsOn": ["lint Dockerfile"]
+    }
+  ]
+}
