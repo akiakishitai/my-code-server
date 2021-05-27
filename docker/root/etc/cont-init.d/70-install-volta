@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+
+# Install Volta
+if ! (type volta > /dev/null 2>&1); then
+  chown abc:abc "$VOLTA_HOME"
+
+  runuser \
+    --shell /bin/bash \
+    --command "curl -sS https://get.volta.sh | bash" \
+    abc
+fi
