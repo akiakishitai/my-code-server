@@ -1,0 +1,61 @@
+name: Push Github Repository
+
+on:
+  pull_request:
+    types:
+      - "closed"
+    branches:
+      - "main"
+    paths:
+      - ".dockerignore"
+      - ".github/workflows/docker-build.yml"
+      - ".github/workflows/docker-push.yml"
+      - "docker/**"
+
+env:
+  BUILDX-CACHE: /tmp/.buildx-cache
+
+jobs:
+  push:
+    name: docker / push repository
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.BUILDX-CACHE }}
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build and Push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          context: ./docker
+          platforms: |
+            linux/amd64
+            linux/arm64
+          tags: |
+            ${{ github.repository }}:latest
+            ${{ github.repository }}:v1
+          cache-from: |
+            type=local,src=${{ env.BUILDX-CACHE }}
