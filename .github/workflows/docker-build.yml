@@ -135,6 +135,8 @@ jobs:
         uses: docker://goodwithtech/dockle:latest
         with:
           args: ${{ env.REGISTRY_IP }}/${{ env.IMAGE_NAME }}:latest
+        env:
+          DOCKLE_NON_SSL: "true"
 
       - name: trivy
         run: echo "trivy"
