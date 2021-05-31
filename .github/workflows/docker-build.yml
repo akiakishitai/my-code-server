@@ -133,7 +133,6 @@ jobs:
       - name: Docker Networks
         run: |
           docker network ls
-          docker network inspect registry
 
       # Security check
       - name: Run Dockle
