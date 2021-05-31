@@ -139,9 +139,9 @@ jobs:
         uses: docker://goodwithtech/dockle:latest
         with:
           # wrong 'localhost', it is container localhost.
-          args: registry:5000/${{ env.IMAGE_NAME }}:latest
+          args: --insecure registry:5000/${{ env.IMAGE_NAME }}:latest
         env:
-          DOCKLE_NON_SSL: "true"
+          DOCKLE_NON_SSL: true
 
       - name: Run Trivy
         uses: aquasecurity/trivy-action@0.0.18
