@@ -130,13 +130,28 @@ jobs:
           cache-from: |
             type=local,src=${{ env.BUILDX_CACHE }}
 
+      - name: Docker Networks
+        run: |
+          docker network ls
+          docker network inspect registry
+
       # Security check
-      - name: Dockle
+      - name: Run Dockle
         uses: docker://goodwithtech/dockle:latest
         with:
-          args: ${{ env.REGISTRY_IP }}/${{ env.IMAGE_NAME }}:latest
+          # wrong 'localhost', it is container localhost.
+          args: registry:5000/${{ env.IMAGE_NAME }}:latest
         env:
           DOCKLE_NON_SSL: "true"
 
-      - name: trivy
-        run: echo "trivy"
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.0.18
+        with:
+          image-ref: registry:5000/${{ env.IMAGE_NAME }}:latest
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+        env:
+          TRIVY_NON_SSL: true
