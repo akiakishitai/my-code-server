@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+
+# Install rustup
+if ! (type rustup > /dev/null 2>&1); then
+  chown abc:abc "$RUSTUP_HOME" "$CARGO_HOME"
+
+  runuser \
+    --shell /bin/bash \
+    --command "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y" \
+    abc
+fi
