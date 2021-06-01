@@ -1,0 +1,11 @@
+# use 'root' user
+CIS-DI-0001
+
+# use 'ADD' in the base image
+CIS-DI-0009
+
+# install 'sudo' command in the base image
+DKL-DI-0001
+
+# only 'latest' tag about base image
+DKL-DI-0006
