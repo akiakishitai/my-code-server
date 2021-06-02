@@ -1,0 +1,96 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:template", "template")
+---
+#@ workflow_name = "Docker Build"
+name: #@ workflow_name
+
+"on":
+  push:
+    branches-ignore:
+      - "main"
+      - "release"
+    paths: #@ data.values.trigger.paths
+
+jobs:
+  hadolint:
+    name: docker / hadolint
+    steps:
+      -  #@ template.replace(data.values.steps.checkout)
+
+      - name: hadolint
+        uses: hadolint/hadolint-action@v1.5.0
+        with:
+          dockerfile: ./docker/Dockerfile
+          ignore: DL3007 DL3008
+
+  build:
+    name: docker / build
+    steps:
+      -  #@ template.replace(data.values.steps.setup_buildx)
+      -  #@ template.replace(data.values.steps.run_buildx)
+      -  #@ template.replace(data.values.steps.move_cache)
+
+  scan:
+    name: docker / vulnerability scan
+    needs: build
+
+    services:
+      #! docker private registry
+      #@ registry_image = "registry:5000/" + data.values.env.image
+      #@ registry_push = "localhost:5000/" + data.values.env.image
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
+    #@yaml/text-templated-strings
+    steps:
+      -  #@ template.replace(data.values.steps.setup_buildx)
+      -  #@ template.replace(data.values.steps.run_buildx)
+      #! Security Check
+      - name: Enable problem matcher
+        run: echo "::add-matcher::.github/workflows/dockle-problem-matcher.json"
+      - name: Run Dockle
+        uses: docker://goodwithtech/dockle:latest
+        with:
+          #! wrong 'localhost', it is container localhost.
+          args: --exit-code 1 (@= registry_image @):latest
+        env:
+          #! use HTTP (options: https://github.com/goodwithtech/dockle/blob/master/cmd/dockle/main.go#L40)
+          DOCKLE_INSECURE: true
+          DOCKLE_NON_SSL: true
+      - name: Run Trivy
+        if: ${{ always() }}
+        uses: aquasecurity/trivy-action@0.0.18
+        with:
+          image-ref: (@= registry_image @):latest
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+        env:
+          TRIVY_NON_SSL: true
+
+#@ pattern = {"name": workflow_name}
+#@overlay/match by=overlay.subset(pattern)
+---
+jobs:
+  scan:
+    steps:
+      #@overlay/match by=overlay.subset({"id": "buildx"})
+      - id: buildx
+        #@overlay/match missing_ok=True
+        with:
+          #! without network=host, failed to connection refused
+          driver-opts: network=host
+      #@overlay/match by=overlay.subset({"id":"docker_build"})
+      - with:
+          #@overlay/replace
+          push: true
+          #@overlay/remove
+          cache-to:
+        env:
+          #@yaml/text-templated-strings
+          BUILD_IMAGE: (@= registry_push @)

@@ -24,6 +24,19 @@
       "group": "build",
       "dependsOrder": "sequence",
       "dependsOn": ["lint Dockerfile"]
+    },
+    {
+      "label": "Workflow Docker Build by ytt",
+      "detail": "テンプレートからDockerビルド・ワークフローをyttで生成",
+      "command": "ytt",
+      "args": [
+        "--file",
+        "yaml-templates/workflows",
+        "--output-files",
+        ".github/workflows"
+      ],
+      "type": "shell",
+      "group": "build"
     }
   ]
 }

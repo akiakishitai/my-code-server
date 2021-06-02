@@ -1,0 +1,12 @@
+#! Common configures
+
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.all, expects="1+"
+---
+jobs:
+  #@overlay/match by=overlay.all, expects="1+"
+  _:
+    #! set runner
+    #@overlay/match missing_ok=True
+    runs-on: ubuntu-20.04
