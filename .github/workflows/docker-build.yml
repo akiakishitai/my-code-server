@@ -1,160 +1,128 @@
 name: Docker Build
-
-on:
+"on":
   push:
     branches-ignore:
-      - "main"
-      - "release"
+    - main
+    - release
     paths:
-      - ".dockerignore"
-      - ".dockleignore"
-      - ".github/workflows/docker-*.yml"
-      - "docker/**"
-
-env:
-  BUILDX_CACHE: /tmp/.buildx-cache
-  REGISTRY_IP: localhost:5000
-  IMAGE_NAME: ${{ github.repository }}
-
+    - .dockerignore
+    - .dockleignore
+    - .github/workflows/docker-*.yml
+    - docker/**
 jobs:
   hadolint:
     name: docker / hadolint
-    runs-on: ubuntu-20.04
     steps:
-      - name: Checkout source
-        if: ${{ !env.ACT }}
-        uses: actions/checkout@v2
-
-      - name: hadolint
-        uses: hadolint/hadolint-action@v1.5.0
-        with:
-          dockerfile: ./docker/Dockerfile
-          ignore: DL3007 DL3008
-
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: hadolint
+      uses: hadolint/hadolint-action@v1.5.0
+      with:
+        dockerfile: ./docker/Dockerfile
+        ignore: DL3007 DL3008
+    runs-on: ubuntu-20.04
   build:
     name: docker / build
-    runs-on: ubuntu-20.04
-
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      # https://github.com/marketplace/actions/docker-setup-buildx
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.BUILDX_CACHE }}
-          key: ${{ github.ref }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ github.ref }}-buildx-
-            refs/head/main-buildx-
-
-      # https://github.com/marketplace/actions/build-and-push-docker-images
-      - name: Build
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          push: false
-          context: ./docker
-          platforms: |
-            linux/amd64
-            linux/arm64
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:v1
-          cache-from: |
-            type=local,src=${{ env.BUILDX_CACHE }}
-          cache-to: |
-            type=local,dest=${{ env.BUILDX_CACHE }}-new
-
-      - name: Move cache
-        run: |
-          rm -rf ${{ env.BUILDX_CACHE }}
-          mv ${{ env.BUILDX_CACHE }}-new ${{ env.BUILDX_CACHE }}
-
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ github.ref }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ github.ref }}-buildx-
+          refs/head/main-buildx-
+    - name: Build
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        push: false
+        context: ./docker
+        platforms: |
+          linux/amd64
+          linux/arm64
+        tags: |
+          ${{ env.BUILD_IMAGE }}:latest
+          ${{ env.BUILD_IMAGE }}:v1
+        cache-from: |
+          type=local,src=/tmp/.buildx-cache
+        cache-to: |
+          type=local,dest=/tmp/.buildx-cache-new
+      env:
+        BUILD_IMAGE: ${{ github.repository }}
+    - name: Move Cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+    runs-on: ubuntu-20.04
   scan:
     name: docker / vulnerability scan
-    runs-on: ubuntu-20.04
     needs: build
-
     services:
-      # docker private registry
       registry:
         image: registry:2
         ports:
-          - 5000:5000
-
+        - 5000:5000
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          # without network=host, failed to connection refused
-          driver-opts: network=host
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.BUILDX_CACHE }}
-          key: ${{ github.ref }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ github.ref }}-buildx-
-            refs/head/main-buildx-
-
-      - name: Build from cache
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          context: ./docker
-          platforms: |
-            linux/amd64
-            linux/arm64
-          tags: |
-            ${{ env.REGISTRY_IP }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY_IP }}/${{ env.IMAGE_NAME }}:v1
-          cache-from: |
-            type=local,src=${{ env.BUILDX_CACHE }}
-
-      # Security check
-      - name: Enable problem matcher
-        run: echo "::add-matcher::.github/workflows/dockle-problem-matcher.json"
-
-      - name: Run Dockle
-        uses: docker://goodwithtech/dockle:latest
-        with:
-          # wrong 'localhost', it is container localhost.
-          args: --exit-code 1 registry:5000/${{ env.IMAGE_NAME }}:latest
-        env:
-          # use HTTP (options: https://github.com/goodwithtech/dockle/blob/master/cmd/dockle/main.go#L40)
-          DOCKLE_INSECURE: true
-          DOCKLE_NON_SSL: true
-
-      - name: Run Trivy
-        if: ${{ always() }}
-        uses: aquasecurity/trivy-action@0.0.18
-        with:
-          image-ref: registry:5000/${{ env.IMAGE_NAME }}:latest
-          format: table
-          exit-code: 1
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
-        env:
-          TRIVY_NON_SSL: true
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ github.ref }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ github.ref }}-buildx-
+          refs/head/main-buildx-
+    - name: Build
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: ./docker
+        platforms: |
+          linux/amd64
+          linux/arm64
+        tags: |
+          ${{ env.BUILD_IMAGE }}:latest
+          ${{ env.BUILD_IMAGE }}:v1
+        cache-from: |
+          type=local,src=/tmp/.buildx-cache
+      env:
+        BUILD_IMAGE: localhost:5000/${{ github.repository }}
+    - name: Enable problem matcher
+      run: echo "::add-matcher::.github/workflows/dockle-problem-matcher.json"
+    - name: Run Dockle
+      uses: docker://goodwithtech/dockle:latest
+      with:
+        args: --exit-code 1 registry:5000/${{ github.repository }}:latest
+      env:
+        DOCKLE_INSECURE: true
+        DOCKLE_NON_SSL: true
+    - name: Run Trivy
+      if: ${{ always() }}
+      uses: aquasecurity/trivy-action@0.0.18
+      with:
+        image-ref: registry:5000/${{ github.repository }}:latest
+        format: table
+        exit-code: 1
+        ignore-unfixed: true
+        vuln-type: os,library
+        severity: CRITICAL,HIGH
+      env:
+        TRIVY_NON_SSL: true
+    runs-on: ubuntu-20.04
