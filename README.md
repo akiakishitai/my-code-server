@@ -29,5 +29,18 @@ _Docker_ イメージサイズが巨大になるのを避けるため、下記�
 
 ## Development Tools
 
-- [`ytt` : _YAML templating tool that works on YAML structure instead of text_](https://github.com/vmware-tanzu/carvel-ytt)
+- [`ytt`](https://github.com/vmware-tanzu/carvel-ytt) : _YAML templating tool that works on YAML structure instead of text_
+
   - Use to generate YAML files of _GitHub Actions Workflow_ .
+
+- [`fish shell`](https://fishshell.com) : _fish is a smart and user-friendly command line shell for Linux, macOS, and the rest of the family._
+
+- [`powerline-go`](https://github.com/justjanne/powerline-go) : _A beautiful and useful low-latency prompt for your shell, written in go_
+
+- [`peco`](https://github.com/peco/peco) : _Simplistic interactive filtering tool_
+
+- [`ghq`](https://github.com/x-motemen/ghq) : _Remote repository management made easy_
+
+- CLI
+  - [`ncdu`](https://dev.yorhel.nl/ncdu) : _Ncdu is a disk usage analyzer with an ncurses interface_
+  - [`tldr`](https://github.com/tldr-pages/tldr) : _📚 Collaborative cheatsheets for console commands_
