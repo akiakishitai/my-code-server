@@ -16,8 +16,6 @@ jobs:
   hadolint:
     name: docker / hadolint
     steps:
-      -  #@ template.replace(data.values.steps.checkout)
-
       - name: hadolint
         uses: hadolint/hadolint-action@v1.5.0
         with:
