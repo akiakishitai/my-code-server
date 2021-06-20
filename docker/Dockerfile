@@ -1,22 +1,81 @@
+# -----
+# Golang tools
 FROM golang:1.16-alpine AS build-go
+WORKDIR /go/src
 
-WORKDIR /build
+RUN \
+  apk --no-cache add \
+    git \
+    binutils
 
-RUN apk --no-cache add git make
+### Install to '/go/bin' as static binary
+SHELL [ "/bin/ash", "-c" ]
+ENV CGO_ENABLED=0
+#ARG GO_TAGS="-tag netgo"
+ARG GO_INSTALL="go install -ldflags '-extldflags=-static'"
+# ghq
+ARG GHQ_VERSION="1.2.1"
+RUN ${GO_INSTALL} github.com/x-motemen/ghq@v${GHQ_VERSION}
 
-# Install ghq, to /go/bin
-RUN git clone --depth 1 https://github.com/x-motemen/ghq
-WORKDIR /build/ghq
-RUN make install
+# pet
+ARG PET_VERSION="0.3.6"
+RUN ${GO_INSTALL} github.com/knqyf263/pet@v${PET_VERSION}
+
+WORKDIR /go/bin
+RUN strip "$(ls)"
+
+# -----
+# Rust tools
+FROM rust:1.53-alpine AS build-rust
+
+ENV CARGO_HOME=/cargo
+WORKDIR ${CARGO_HOME}/bin
+
+RUN \
+  apk --no-cache add \
+#    git \
+    musl-dev
+
+# Install
+RUN \
+  cargo install --version ^0.10.1 exa && \
+  cargo install --version ^2.1.0 git-interactive-rebase-tool
+
+# Reduce binary size
+RUN strip "$(ls)"
 
 # -----
 # Download tools
-FROM alpine:3.12 AS downloader
+FROM alpine:3.12 AS downloader-base
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG TARGETARCH
 
+RUN \
+  apk --no-cache add \
+    curl \
+    unzip
+
+### fonts
+WORKDIR /fonts
+SHELL [ "/bin/ash", "-o", "pipefail", "-c" ]
+RUN \
+  curl -sL \
+    https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/RobotoMono.zip \
+    -o /tmp/roboto.zip && \
+  unzip /tmp/roboto.zip \
+    -x "*Windows Compatible.ttf" "*Complete.ttf" && \
+  # rename, to lower and change spaces to '-'.
+  for f in *; do \
+    lower=$(echo "$f" | tr '[:upper:]' '[:lower:]'); \
+    rename=$(echo "$lower" | sed -r -e 's/ /-/g' -e 's/^(.*)-nerd-font.*ttf$/\1.ttf/g'); \
+    mv "$f" "$rename"; \
+  done
+
+### tools
 WORKDIR /app
 
-RUN apk --no-cache add curl
+# store *.tar.* files
+RUN mkdir /tmp/tools
 
 # ytt
 ARG YTT_VERSION="0.34.0"
@@ -32,6 +91,80 @@ RUN \
     https://github.com/justjanne/powerline-go/releases/download/v${POWERLINE_VERSION}/powerline-go-linux-${TARGETARCH} \
     -o powerline-go
 
+### download arm64 version
+FROM downloader-base AS downloader-arm64
+# fd
+ARG FD_VERSION="8.2.1"
+RUN \
+  curl -sL \
+    https://github.com/sharkdp/fd/releases/download/v${FD_VERSION}/fd-v${FD_VERSION}-arm-unknown-linux-musleabihf.tar.gz \
+    -o /tmp/tools/fd.tar.gz
+
+# tealdeer, is the tldr client in Rust.
+ARG TEALDEER_VERSION="1.4.1"
+RUN \
+  curl -sL \
+    https://github.com/dbrgn/tealdeer/releases/download/v${TEALDEER_VERSION}/tldr-linux-arm-musleabi \
+    -o tldr
+
+# hyperfine
+ARG HYPERFINE_VERSION="1.11.0"
+RUN \
+  curl -sL \
+    https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine-v${HYPERFINE_VERSION}-arm-unknown-linux-musleabihf.tar.gz \
+    -o /tmp/tools/hyperfine.tar.gz
+
+### download amd64 version
+FROM downloader-base AS downloader-amd64
+# fd
+ARG FD_VERSION="8.2.1"
+RUN \
+  curl -sL \
+    https://github.com/sharkdp/fd/releases/download/v${FD_VERSION}/fd-v${FD_VERSION}-x86_64-unknown-linux-musl.tar.gz \
+    -o /tmp/tools/fd.tar.gz
+
+# tealdeer, is the tldr client in Rust.
+ARG TEALDEER_VERSION="1.4.1"
+RUN \
+  curl -sL \
+    https://github.com/dbrgn/tealdeer/releases/download/v${TEALDEER_VERSION}/tldr-linux-x86_64-musl \
+    -o tldr
+
+# hyperfine
+ARG HYPERFINE_VERSION="1.11.0"
+RUN \
+  curl -sL \
+    https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/hyperfine-v${HYPERFINE_VERSION}-x86_64-unknown-linux-musl.tar.gz \
+    -o /tmp/tools/hyperfine.tar.gz
+
+# hadolint ignore=DL3006
+FROM downloader-${TARGETARCH} AS downloader
+WORKDIR /app
+SHELL [ "/bin/ash", "-o", "pipefail", "-c" ]
+
+### extract tools
+# fd
+RUN \
+  tar xf \
+    /tmp/tools/fd.tar.gz \
+    "$(tar tf /tmp/tools/fd.tar.gz | grep '.*/fd$')" \
+    --strip-components 1 && \
+  chown root:root fd
+
+# hyperfine
+RUN \
+  tar xf \
+    /tmp/tools/hyperfine.tar.gz \
+    "$(tar tf /tmp/tools/hyperfine.tar.gz | grep '.*/hyperfine$')" \
+    --strip-components 1 && \
+  chown root:root hyperfine
+
+#RUN \
+#  find /tmp/tools \
+#    -type f \
+#    -name "*.tar.gz" \
+#    -exec tar -xf {} \;
+
 # add exectable permission for binaries
 RUN chmod -R a+x /app
 
@@ -44,7 +177,9 @@ WORKDIR /keyrings
 
 ARG KEY_DIR="gnupg-ring:/keyrings"
 ARG GNUPGHOME="/tmp/.gnupg"
-ARG GNUPG_OPTIONS="--no-default-keyring --homedir ${GNUPGHOME} --keyserver keyserver.ubuntu.com"
+ARG GNUPG_OPTIONS="--no-default-keyring \
+  --homedir ${GNUPGHOME} \
+  --keyserver keyserver.ubuntu.com"
 
 RUN mkdir -m 700 ${GNUPGHOME}
 
@@ -95,6 +230,16 @@ RUN mkdir -p ${VOLTA_HOME}
 ARG SERVER_USER=abc
 RUN chown ${SERVER_USER}:${SERVER_USER} ${_APP_HOME}/*
 
+### custom font
+# Copy fonts
+ARG FONT_DEST="/usr/local/share/.config/yarn/global/node_modules/code-server/src/browser/media/"
+COPY --from=downloader /fonts ${FONT_DEST}
+COPY stylesheets ${FONT_DEST}
+RUN \
+  sed \
+    -i 's@</head>@<link rel="stylesheet" href="{{CS_STATIC_BASE}}/src/browser/media/custom-fonts.css">\n</head>@g' \
+    ${FONT_DEST}../pages/vscode.html
+
 ## sources.list
 # remove 'deb-src'
 RUN sed -i -e "/^deb-src/d" /etc/apt/sources.list
@@ -112,10 +257,6 @@ ENV PATH="$PATH:$VOLTA_HOME/bin"
 # -----
 # MAIN Installer
 FROM prepare AS installer
-# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-ARG TARGETARCH
 
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
@@ -142,7 +283,6 @@ RUN \
   apt-get install -y --no-install-recommends \
     ncdu \
     peco \
-    tldr \
     && \
   echo '*** clean up ***' && \
   apt-get clean && \
@@ -152,8 +292,10 @@ RUN \
     /var/tmp/*
 
 # Copy tools
-COPY --from=build-go /go/bin /usr/local/bin/
-COPY --from=downloader /app /usr/local/bin/
+ARG COPY_BIN_DEST=/usr/local/bin/
+COPY --from=build-go /go/bin ${COPY_BIN_DEST}
+COPY --from=build-rust /cargo/bin ${COPY_BIN_DEST}
+COPY --from=downloader /app ${COPY_BIN_DEST}
 
 ### Cannot change user from 'abc', because of s6-overlay init ###
 #RUN \
