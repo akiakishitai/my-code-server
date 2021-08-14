@@ -19,10 +19,22 @@ RUN ${GO_INSTALL} github.com/x-motemen/ghq@v${GHQ_VERSION}
 
 # pet
 ARG PET_VERSION="0.3.6"
-RUN ${GO_INSTALL} github.com/knqyf263/pet@v${PET_VERSION}
+RUN \
+  git clone --depth 1 --branch v${PET_VERSION} \
+    https://github.com/knqyf263/pet.git \
+    /go/src/github.com/knqyf263/pet
+WORKDIR /go/src/github.com/knqyf263/pet
+RUN \
+  # security update
+  go get -u golang.org/x/crypto@v0.0.0-20210813211128-0a44fdfbc16e && \
+  go mod tidy && \
+  go install -ldflags "-X github.com/knqyf263/pet/cmd.version=${PET_VERSION} -extldflags=-static"
 
 WORKDIR /go/bin
-RUN strip "$(ls)"
+RUN \
+  for binary in ./* ; do \
+    strip "$binary"; \
+  done
 
 # -----
 # Rust tools
@@ -33,16 +45,23 @@ WORKDIR ${CARGO_HOME}/bin
 
 RUN \
   apk --no-cache add \
-#    git \
+    #alpine-sdk \
+    #build-base \
+    clang \
+    # git \
     musl-dev
 
 # Install
+ENV CC=clang
 RUN \
   cargo install --version ^0.10.1 exa && \
   cargo install --version ^2.1.0 git-interactive-rebase-tool
 
 # Reduce binary size
-RUN strip "$(ls)"
+RUN \
+  for binary in ./* ; do \
+    strip "$binary"; \
+  done
 
 # -----
 # Download tools
