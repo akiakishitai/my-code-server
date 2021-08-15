@@ -1,0 +1,48 @@
+# Reference: https://docs.linuxserver.io/images/docker-code-server
+---
+version: "3.8"
+services:
+  code-server:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    #image: ghcr.io/linuxserver/code-server
+    image: my_code-server
+    container_name: code-server
+    environment:
+      PUID: ${PUID:-1000} # default 1000
+      PGID: ${PGID:-1000} # default 1000
+      TZ: Asia/Tokyo
+      # Environment variables from files (Docker secrets)
+      FILE__PASSWORD: /run/secrets/my_password
+      #PASSWORD: password #optional
+      #HASHED_PASSWORD:  #optional
+      #SUDO_PASSWORD: password #optional
+      #SUDO_PASSWORD_HASH:  #optional
+      #PROXY_DOMAIN: code-server.my.domain #optional
+    secrets:
+      - my_password
+    ports:
+      - 127.0.0.1:8443:8443
+    volumes:
+      - type: volume
+        source: config
+        target: /config
+        volume:
+          nocopy: true
+      - type: volume
+        source: apps
+        target: /app
+        volume:
+          nocopy: true
+    restart: unless-stopped
+
+volumes:
+  config:
+    name: coder-config
+  apps:
+    name: coder-app
+
+secrets:
+  my_password:
+    file: ./secrets_password

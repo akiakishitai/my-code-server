@@ -41,6 +41,19 @@ _Docker_ イメージサイズが巨大になるのを避けるため、下記�
 
 - [`ghq`](https://github.com/x-motemen/ghq) : _Remote repository management made easy_
 
+- [`git-interactive-rebase-tool`](https://github.com/MitMaro/git-interactive-rebase-tool) : _Native cross-platform full feature terminal-based sequence editor for git interactive rebase._
+
+  - binary name is `interactive-rebase-tool` .
+
+- [`pet`](https://github.com/knqyf263/pet) : _Simple command-line snippet manager, written in Go._
+
+- [`hyperfine`](https://github.com/sharkdp/hyperfine) : _A command-line benchmarking tool_
+
+- [`Nerd Fonts`](https://www.nerdfonts.com) (RobotoMono)
+
 - CLI
+  - [`exa`](https://github.com/ogham/exa) : _A modern replacement for ‘ls’._
+  - [`fd`](https://github.com/sharkdp/fd) : _A simple, fast and user-friendly alternative to 'find'_
   - [`ncdu`](https://dev.yorhel.nl/ncdu) : _Ncdu is a disk usage analyzer with an ncurses interface_
   - [`tldr`](https://github.com/tldr-pages/tldr) : _📚 Collaborative cheatsheets for console commands_
+    - [`tealdeer`](https://dbrgn.github.io/tealdeer/) : _A very fast implementation of tldr in Rust._
