@@ -6,32 +6,15 @@
 name: #@ workflow_name
 
 "on":
-  pull_request:
+  push:
     branches:
       - "main"
     paths: #@ data.values.trigger.paths
-    types:
-      - "closed"
 
 jobs:
   update_cache:
     name: docker / update layer cache
-    if: ${{ github.event.pull_request.merged == true }}
     steps:
       -  #@ template.replace(data.values.steps.setup_buildx)
       -  #@ template.replace(data.values.steps.run_buildx)
       -  #@ template.replace(data.values.steps.move_cache)
-
-#@ pattern = {"name": workflow_name}
-#@overlay/match by=overlay.subset(pattern)
----
-jobs:
-  update_cache:
-    steps:
-      #@overlay/match by=overlay.subset({"name":"Cache Docker layers"})
-      - with:
-          #@overlay/replace
-          restore-keys: |
-            ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.head_ref }}-
-            ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
-            ${{ env.CACHE_PREFIX }}-dockerfile-
