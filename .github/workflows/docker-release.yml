@@ -1,6 +1,6 @@
 name: Docker Release
 "on":
-  pull_request:
+  push:
     branches:
     - main
     paths:
@@ -8,12 +8,9 @@ name: Docker Release
     - .dockleignore
     - .github/workflows/docker-*.yml
     - docker/**
-    types:
-    - closed
 jobs:
   update_cache:
     name: docker / update layer cache
-    if: ${{ github.event.pull_request.merged == true }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -28,7 +25,7 @@ jobs:
         path: /tmp/.buildx-cache
         key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles('**/docker/Dockerfile') }}
         restore-keys: |
-          ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.head_ref }}-
+          ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
           ${{ env.CACHE_PREFIX }}-dockerfile-
       env:
