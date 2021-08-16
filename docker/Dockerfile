@@ -48,11 +48,14 @@ RUN \
     #alpine-sdk \
     #build-base \
     clang \
-    # git \
+    lld \
     musl-dev
 
 # Install
-ENV CC=clang
+ENV \
+  RUSTC_LINKER=/usr/bin/clang \
+  CC=/usr/bin/clang \
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 RUN \
   cargo install --version ^0.10.1 exa && \
   cargo install --version ^2.1.0 git-interactive-rebase-tool
