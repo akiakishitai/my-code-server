@@ -31,10 +31,14 @@ steps:
       uses: actions/cache@v2
       with:
         path: #@ buildx_cache
-        key: ${{ github.ref }}-buildx-${{ github.sha }}
+        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles('**/docker/Dockerfile') }}
         restore-keys: |
-          ${{ github.ref }}-buildx-
-          refs/head/main-buildx-
+          ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-
+          ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
+          ${{ env.CACHE_PREFIX }}-dockerfile-
+      env:
+        CACHE_PREFIX: ${{ runner.os }}-build
+        CACHE_NAME: code-server-dockerfile
 
   #! run docker buildx
   #!
