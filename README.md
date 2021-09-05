@@ -2,6 +2,37 @@
 
 A 'code-server' docker container configured for personal use.
 
+## Build
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+### Podman
+
+_Podman_ でビルドする場合、`TARGETARCH` などの自動設定される変数は、明示的にグローバル宣言する必要がある（が `Docker` ではグローバル宣言するとうまくいかない）。
+そのため `sed` コマンドにて _Dockerfile_ に挿入してビルドする。
+
+```bash
+sed -e '1i ARG TARGETARCH' ./docker/Dockerfile | \
+  podman build \
+    --layers \
+    --tag localhost/code-server:3.10.2 \
+    --platform="linux/arm64" \
+    --format docker \
+    --file - \
+    docker
+```
+
+```bash
+# raw podman cli
+env CODE_SERVER_VERSION=3.10.2 PASSWORD=abcd1234 ./podman-cmd.sh
+
+# or, use Kubernetes YAML
+podman play kube code-server-pod.yml --configmap secrets-configmap.yml
+```
+
 ## コンテナ起動時にインストール開始
 
 _Docker_ イメージサイズが巨大になるのを避けるため、下記ツールはイメージに含まない。

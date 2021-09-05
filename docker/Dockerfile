@@ -1,6 +1,8 @@
+ARG GOLANG_VERSION="1.16"
+ARG RUNT_VERSION="1.53"
 # -----
 # Golang tools
-FROM golang:1.16-alpine AS build-go
+FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS build-go
 WORKDIR /go/src
 
 RUN \
@@ -38,7 +40,7 @@ RUN \
 
 # -----
 # Rust tools
-FROM rust:1.53-alpine AS build-rust
+FROM docker.io/library/rust:${RUNT_VERSION}-alpine AS build-rust
 
 ENV CARGO_HOME=/cargo
 WORKDIR ${CARGO_HOME}/bin
@@ -58,7 +60,9 @@ ENV \
   RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 RUN \
   cargo install --version ^0.10.1 exa && \
-  cargo install --version ^2.1.0 git-interactive-rebase-tool
+  cargo install --version ^2.1.0 git-interactive-rebase-tool && \
+  # clean cache & source
+  rm -rf ${CARGO_HOME}/registry
 
 # Reduce binary size
 RUN \
@@ -68,7 +72,7 @@ RUN \
 
 # -----
 # Download tools
-FROM alpine:3.12 AS downloader-base
+FROM docker.io/library/alpine:3.12 AS downloader-base
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG TARGETARCH
 
@@ -192,8 +196,19 @@ RUN chmod -R a+x /app
 
 # -----
 # Install PPA keyrings
-# Base: https://github.com/linuxserver/docker-code-server
-FROM ghcr.io/linuxserver/code-server:latest AS keyrings
+FROM docker.io/library/debian:bullseye-slim AS keyrings
+
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    gpg \
+    gpg-agent \
+    dirmngr && \
+  apt-get clean && \
+  rm -rf \
+    /tmp/* \
+    /var/lib/apt/lists/* \
+    /var/tmp/*
 
 WORKDIR /keyrings
 
@@ -224,7 +239,10 @@ RUN chmod -R a+r /keyrings
 # Prepare directories, environment variables, ...
 
 # Base: https://github.com/linuxserver/docker-code-server
-FROM ghcr.io/linuxserver/code-server:latest AS prepare
+# webview bug: vscode 1.57 ~ 1.59
+# -> ref: https://github.com/mhutchie/vscode-git-graph/issues/535
+FROM ghcr.io/linuxserver/code-server:version-v3.10.2 AS pre_install
+LABEL build-code-server-version="code-server 3.10.2, vscode 1.56.1"
 
 # pipefail: パイプの途中でコマンドが失敗したとき、終了コードをエラーコードで返す
 # errexit(-e): コマンドがエラーステータスで終了した時点で、即座にプロセスを中止する
@@ -278,7 +296,7 @@ ENV PATH="$PATH:$VOLTA_HOME/bin"
 
 # -----
 # MAIN Installer
-FROM prepare AS installer
+FROM pre_install AS installer
 
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
@@ -291,6 +309,12 @@ COPY --from=keyrings /keyrings /usr/share/keyrings/
 RUN \
   apt-get clean && \
   apt-get update && \
+  ### Security updates
+  apt-get install -y --no-install-recommends \
+    libssl1.1 \
+    libsystemd0 \
+    libudev1 \
+    openssl && \
   ### Install git (latest), fish shell
   apt-get install -y --no-install-recommends \
     git \

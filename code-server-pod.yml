@@ -1,0 +1,68 @@
+# Generation of Kubernetes YAML is still under development!
+#
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-3.0.1
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-code-server
+  creationTimestamp: "2021-08-21T13:06:28Z"
+  labels:
+    app: code-server
+  annotations:
+    versions:
+      code_server: "3.10.2"
+      vscode: "1.56.1"
+    base_image: "https://docs.linuxserver.io/images/docker-code-server"
+spec:
+  containers:
+  - image: localhost/code-server:3.10.2
+    name: code-server
+    command:
+    - /init
+    env:
+    - name: PASSWORD
+      valueFrom:
+        configMapKeyRef:
+          name: code-server-config
+          key: password
+    - name: TZ
+      value: Asia/Tokyo
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+    ports:
+    - containerPort: 8443
+      hostPort: 8443
+      protocol: TCP
+    resources: {}
+    securityContext:
+      allowPrivilegeEscalation: true
+      capabilities:
+        drop:
+        - CAP_MKNOD
+        - CAP_NET_RAW
+        - CAP_AUDIT_WRITE
+      privileged: false
+      readOnlyRootFilesystem: false
+      seLinuxOptions: {}
+    volumeMounts:
+    - mountPath: /app
+      name: app-data
+    - mountPath: /config
+      name: config-data
+    workingDir: /
+  dnsConfig: {}
+  restartPolicy: Never
+  volumes:
+  # A Kubernetes PersistentVolumeClaim represents a Podman named volume. 
+  - name: app-data
+    persistentVolumeClaim:
+      claimName: coder-app
+  - name: config-data
+    persistentVolumeClaim:
+      claimName: coder-config
+status: {}
