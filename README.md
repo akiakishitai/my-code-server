@@ -11,14 +11,18 @@ docker compose up -d
 
 ### Podman
 
+_Podman_ でビルドする場合、`TARGETARCH` などの自動設定される変数は、明示的にグローバル宣言する必要がある（が `Docker` ではグローバル宣言するとうまくいかない）。
+そのため `sed` コマンドにて _Dockerfile_ に挿入してビルドする。
+
 ```bash
-podman build \
-  --layers \
-  --tag localhost/code-server:3.10.2 \
-  --platform="linux/arm64" \
-  --format docker \
-  --file docker/Dockerfile \
-  docker
+sed -e '1i ARG TARGETARCH' ./docker/Dockerfile | \
+  podman build \
+    --layers \
+    --tag localhost/code-server:3.10.2 \
+    --platform="linux/arm64" \
+    --format docker \
+    --file - \
+    docker
 ```
 
 ```bash

@@ -1,4 +1,3 @@
-ARG TARGETARCH
 ARG GOLANG_VERSION="1.16"
 ARG RUNT_VERSION="1.53"
 # -----
@@ -243,7 +242,7 @@ RUN chmod -R a+r /keyrings
 # webview bug: vscode 1.57 ~ 1.59
 # -> ref: https://github.com/mhutchie/vscode-git-graph/issues/535
 FROM ghcr.io/linuxserver/code-server:version-v3.10.2 AS pre_install
-LABEL build_code_server_version="code-server 3.10.2, vscode 1.56.1"
+LABEL build-code-server-version="code-server 3.10.2, vscode 1.56.1"
 
 # pipefail: パイプの途中でコマンドが失敗したとき、終了コードをエラーコードで返す
 # errexit(-e): コマンドがエラーステータスで終了した時点で、即座にプロセスを中止する
@@ -310,6 +309,12 @@ COPY --from=keyrings /keyrings /usr/share/keyrings/
 RUN \
   apt-get clean && \
   apt-get update && \
+  ### Security updates
+  apt-get install -y --no-install-recommends \
+    libssl1.1 \
+    libsystemd0 \
+    libudev1 \
+    openssl && \
   ### Install git (latest), fish shell
   apt-get install -y --no-install-recommends \
     git \
