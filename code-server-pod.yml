@@ -12,9 +12,8 @@ metadata:
   labels:
     app: code-server
   annotations:
-    versions:
-      code_server: "3.10.2"
-      vscode: "1.56.1"
+    code_server_version: "3.10.2"
+    vscode_version: "1.56.1"
     base_image: "https://docs.linuxserver.io/images/docker-code-server"
 spec:
   containers:
