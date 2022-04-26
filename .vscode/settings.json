@@ -1,0 +1,16 @@
+{
+  "[shellscript]": {
+    "editor.formatOnSave": true,
+  },
+  "[dockerfile]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker",
+    "editor.formatOnSave": true
+  },
+  "files.associations": {
+    "**/contents/*cont-init.d/*": "shellscript"
+  },
+  "shellformat.useEditorConfig": true
+}

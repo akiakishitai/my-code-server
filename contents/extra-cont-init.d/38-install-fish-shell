@@ -1,0 +1,36 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### fish-shell ######
+# Smart and user-friendly command line shell.
+# https://fishshell.com
+######
+
+if ! (type fish >/dev/null 2>&1); then
+  # Register the fish-shell keyring
+  KEYRING="${GNUPGKEYRINGS:-/usr/local/share/keyrings}/fish-shell-archive-keyring.gpg"
+  if [ ! -f "${KEYRING}" ]; then
+    gpg \
+      --no-default-keyring \
+      --keyserver keyserver.ubuntu.com \
+      --keyring "gnupg-ring:${KEYRING}" \
+      --recv-keys 59FDA1CE1B84B3FAD89366C027557F056DC33CA5
+    chmod +r "${KEYRING}"
+  fi
+
+  # Register fish-shell sources.list
+  LIST_FILE="/etc/apt/sources.list.d/fish-shell.list"
+  if [ ! -f "${LIST_FILE}" ]; then
+    # shellcheck source=/dev/null
+    . /etc/os-release
+    echo "deb [signed-by=${KEYRING}] http://ppa.launchpad.net/fish-shell/release-3/ubuntu ${UBUNTU_CODENAME} main" >${LIST_FILE}
+  fi
+
+  # Install
+  apt-get update --quiet=2
+  env DEBIAN_FRONTEND=noninteractive \
+    apt-get install --quiet -y fish
+else
+  fish --version
+fi

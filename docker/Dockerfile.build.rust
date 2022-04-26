@@ -1,0 +1,53 @@
+ARG RUST_VERSION="1.66"
+FROM docker.io/library/rust:${RUST_VERSION}-alpine AS buildbase
+
+# Set up environment variables
+ENV \
+  CARGO_HOME="/cargo" \
+  CARGO_TARGET_DIR="/tmp/cargotmp"
+ENV \
+  CARGO_BUILD_RUSTFLAGS="-C incremental=${CARGO_TARGET_DIR}/incremental"
+ENV \
+  CC=musl-gcc \
+  CXX=musl-g++ \
+  # ref: https://issuekiller.com/issues/cross-rs/cross/43913163#answer-59391078
+  # Dynamic Link
+  #CARGO_BUILD_RUSTFLAGS="-C link-arg=/lib/libc.musl-aarch64.so.1" \
+  # ref: https://github.com/rust-lang/rust/issues/89626#issuecomment-945814003
+  CFLAGS=-mno-outline-atomics \
+  ### OpenSSL
+  # ref: https://docs.rs/openssl/0.10.38/openssl/index.html#manual
+  OPENSSL_STATIC=true \
+  OPENSSL_LIB_DIR=/usr/lib \
+  OPENSSL_INCLUDE_DIR=/usr/include/openssl \
+  # ref: https://www.openssl.org/docs/manmaster/man7/openssl-env.html
+  SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+  SSL_CERT_DIR=/etc/ssl/certs \
+  ### zlib
+  # ref: https://github.com/rust-lang/libz-sys/blob/c126f58d9ac5433821708f45af3784d844bd1ee6/build.rs#L30
+  LIBZ_SYS_STATIC=1
+
+# hadolint ignore=DL3018
+RUN \
+  # Install packages for building
+  apk --no-cache add \
+  # binutils \
+  # gcc \
+  g++ \
+  git \
+  libc-dev \
+  linux-headers \
+  musl-dev \
+  openssl-dev \
+  openssl-libs-static \
+  zlib-static && \
+  # Make the symlink from musl-gcc to /usr/bin/ARCH-alpine-linux-musl-gcc
+  ln -s "/usr/bin/$(arch)-alpine-linux-musl-gcc" "/usr/bin/musl-gcc" && \
+  ln -s "/usr/bin/$(arch)-alpine-linux-musl-g++" "/usr/bin/musl-g++"
+
+COPY resources/entrypoint.sh /entrypoint.sh
+
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
+WORKDIR ${CARGO_HOME}
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD [ "cargo", "--version" ]

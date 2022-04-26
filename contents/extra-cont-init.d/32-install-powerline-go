@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### powerline-go ######
+# A beautiful and useful low-latency prompt for your shell, written in go.
+# https://github.com/justjanne/powerline-go
+######
+POWERLINE_VERSION="1.22.1"
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+declare -A TARGET_DICT=(
+  ["aarch64"]="powerline-go-linux-arm64"
+  ["x86_64"]="powerline-go-linux-amd64"
+)
+TARGET="${TARGET_DICT[$(uname --machine)]}"
+
+if ! (type powerline-go >/dev/null 2>&1); then
+  cd "${CLI_DIR}" || exit
+
+  curl -sL \
+    "https://github.com/justjanne/powerline-go/releases/download/v${POWERLINE_VERSION}/${TARGET}" \
+    -o powerline-go
+  chmod 755 powerline-go
+  chown 0:0 powerline-go
+fi
+
+# no option
+#powerline-go --version

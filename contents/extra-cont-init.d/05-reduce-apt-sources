@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+######
+# Reduce update size and time.
+######
+
+# Comment-Out universe and multiverse repositories.
+#sed -i -r \
+#  -e "s/(^[^#].*focal (universe|multiverse)$)/#\1/g" \
+#  -e "s/(^[^#].*focal-updates (universe|multiverse)$)/#\1/g" \
+#  /etc/apt/sources.list
+
+# Remove universe and multiverse repositories.
+LIST_FILE="/etc/apt/sources.list"
+URL="http://ports.ubuntu.com/ubuntu-ports/"
+
+if [ -f "${LIST_FILE}" ] && [ ! -f "${LIST_FILE}.bk" ]; then
+  mv ${LIST_FILE}{,.bk}
+fi
+
+# shellcheck source=/dev/null
+. /etc/os-release
+cat <<EOF >${LIST_FILE}
+deb ${URL} ${UBUNTU_CODENAME} main restricted
+deb ${URL} ${UBUNTU_CODENAME}-updates main restricted
+deb ${URL} ${UBUNTU_CODENAME}-backports main restricted
+deb ${URL} ${UBUNTU_CODENAME}-security main restricted
+EOF

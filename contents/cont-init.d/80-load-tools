@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+######
+# Load custom scripts.
+######
+
+set -u
+
+# If not found scripts, exit.
+${EXTRA_INIT_DIR:=/usr/local/etc/extra-cont-init.d}
+EXTRA_INIT_DIR_NAME="$(basename "${EXTRA_INIT_DIR}")"
+if
+  [ ! -d "${EXTRA_INIT_DIR}" ] ||
+    [ -z "$(/bin/ls -A "${EXTRA_INIT_DIR}" 2>/dev/null)" ]
+then
+  echo "[${EXTRA_INIT_DIR_NAME}] not found..."
+  exit
+fi
+
+# Do scripts
+for SCRIPT in "${EXTRA_INIT_DIR}"/*; do
+  SCRIPT_NAME="$(basename "${SCRIPT}")"
+  if [ -f "${SCRIPT}" ]; then
+    echo "[${EXTRA_INIT_DIR_NAME}] ${SCRIPT_NAME}: executing..."
+    /bin/bash "${SCRIPT}"
+    echo "[${EXTRA_INIT_DIR_NAME}] ${SCRIPT_NAME}: exited $?"
+  fi
+done

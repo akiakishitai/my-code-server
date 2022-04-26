@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### tealdeer ######
+# A very fast implementation of tldr in Rust: Simplified, example based and community-driven man pages.
+# https://github.com/dbrgn/tealdeer
+######
+TEALDEER_VERSION="1.5.0"
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+declare -A TARGET_DICT=(
+  ["aarch64"]="tealdeer-linux-arm-musleabi"
+  ["x86_64"]="tealdeer-linux-x86_64-musl"
+)
+TARGET="${TARGET_DICT[$(uname --machine)]}"
+
+if ! (type tealdeer >/dev/null 2>&1); then
+  cd "${CLI_DIR}" || exit
+
+  curl -sL \
+    "https://github.com/dbrgn/tealdeer/releases/download/v${TEALDEER_VERSION}/${TARGET}" \
+    -o tealdeer
+  chmod 755 tealdeer
+  chown 0:0 tealdeer
+  ln -s --force "tealdeer" "tldr"
+fi
+
+tldr --version

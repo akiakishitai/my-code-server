@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### hyperfine ######
+# A command-line benchmarking tool.
+# https://github.com/sharkdp/hyperfine
+######
+HYPERFINE_VERSION="1.13.0"
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+declare -A TARGET_DICT=(
+  ["aarch64"]="hyperfine-v${HYPERFINE_VERSION}-arm-unknown-linux-musleabihf"
+  ["x86_64"]="hyperfine-v${HYPERFINE_VERSION}-x86_64-unknown-linux-musl"
+)
+TARGET="${TARGET_DICT[$(uname --machine)]}"
+
+if ! (type hyperfine >/dev/null 2>&1); then
+  cd "${CLI_DIR}" || exit
+
+  curl -sL \
+    "https://github.com/sharkdp/hyperfine/releases/download/v${HYPERFINE_VERSION}/${TARGET}.tar.gz" |
+    tar -xz "${TARGET}/hyperfine" --strip-components 1
+  chmod 755 hyperfine
+  chown 0:0 hyperfine
+fi
+
+hyperfine --version
