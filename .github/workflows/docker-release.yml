@@ -11,6 +11,10 @@ name: Docker Release
 jobs:
   update_cache:
     name: docker / update layer cache
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -23,7 +27,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
-        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles('**/docker/Dockerfile') }}
+        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles( matrix.dockerfile ) }}
         restore-keys: |
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
@@ -37,6 +41,7 @@ jobs:
       with:
         push: false
         context: ./docker
+        file: ${{ matrix.dockerfile }}
         platforms: |
           linux/amd64
           linux/arm64
