@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### ytt ######
+# YAML templating tool that works on YAML structure instead of text.
+# https://github.com/vmware-tanzu/carvel-ytt
+######
+YTT_VERSION="0.40.1"
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+declare -A TARGET_DICT=(
+  ["aarch64"]="ytt-linux-arm64"
+  ["x86_64"]="ytt-linux-amd64"
+)
+TARGET="${TARGET_DICT[$(uname --machine)]}"
+
+if ! (type ytt >/dev/null 2>&1); then
+  cd "${CLI_DIR}" || exit
+
+  curl \
+    -sL "https://github.com/vmware-tanzu/carvel-ytt/releases/download/v${YTT_VERSION}/${TARGET}" \
+    -o ytt
+  chmod 755 ytt
+  chown 0:0 ytt
+fi
+
+ytt --version

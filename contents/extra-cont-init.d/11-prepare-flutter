@@ -1,0 +1,22 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+######
+# Install required libraries for Flutter.
+# ref: https://docs.flutter.dev/get-started/install/linux
+######
+
+apt-get update --quiet=2
+env DEBIAN_FRONTEND=noninteractive \
+  apt-get install --quiet -y \
+  bash \
+  curl \
+  file \
+  git \
+  libglu1-mesa \
+  mkdir \
+  rm \
+  unzip \
+  which \
+  xz-utils \
+  zip

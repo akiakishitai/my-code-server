@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+######
+# Create the directory for CLI binaries.
+######
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+mkdir -p "${CLI_DIR}"
+
+# GPG Keyrings
+mkdir -p \
+  "${GNUPGKEYRINGS:-/usr/local/share/keyrings}" \
+  "${GNUPGHOME:-$HOME/.gnupg}"
+
+# Install unzip for extracting .zip files
+apt-get update --quiet=2
+env DEBIAN_FRONTEND=noninteractive \
+  apt-get install --quiet -y unzip

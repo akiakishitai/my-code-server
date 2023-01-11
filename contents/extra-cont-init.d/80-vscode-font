@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+######
+# Customize code-server fonts.
+######
+
+VERSION="2.1.0"
+FONT_DIR="/app/code-server/src/browser/pages/fonts"
+TAGET_HTML="/app/code-server/lib/vscode/out/vs/code/browser/workbench/workbench.html"
+TMPFILE="/tmp/SourceCodePro.zip"
+
+# Download fonts
+curl -sL \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v${VERSION}/SourceCodePro.zip" \
+  -o "${TMPFILE}"
+unzip "${TMPFILE}" \
+  "Sauce Code Pro Bold Nerd Font Complete Mono.ttf" \
+  "Sauce Code Pro Bold Italic Nerd Font Complete Mono.ttf" \
+  "Sauce Code Pro Nerd Font Complete Mono.ttf" \
+  "Sauce Code Pro Italic Nerd Font Complete Mono.ttf" \
+  -d "${FONT_DIR}"
+rm "${TMPFILE}"
+
+# Edit html of code-server
+sed -i \
+  '/<\/head>/i <link data-font="Sauce Code Pro Nerd Font" rel="stylesheet" href="{{BASE}}/_static/src/browser/pages/custom-fonts.css">' \
+  "${TAGET_HTML}"

@@ -8,21 +8,29 @@ name: Docker Build
     - .dockerignore
     - .dockleignore
     - .github/workflows/docker-*.yml
-    - docker/**
+    - docker/Dockerfile*
 jobs:
   hadolint:
     name: docker / hadolint
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: hadolint
       uses: hadolint/hadolint-action@v1.5.0
       with:
-        dockerfile: ./docker/Dockerfile
+        dockerfile: ${{ matrix.dockerfile }}
         ignore: DL3007 DL3008 DL3018
     runs-on: ubuntu-20.04
   build:
     name: docker / build
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -35,7 +43,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
-        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles('**/docker/Dockerfile') }}
+        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles( matrix.dockerfile ) }}
         restore-keys: |
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
@@ -49,6 +57,7 @@ jobs:
       with:
         push: false
         context: ./docker
+        file: ${{ matrix.dockerfile }}
         platforms: |
           linux/amd64
           linux/arm64
@@ -74,6 +83,10 @@ jobs:
         image: registry:2
         ports:
         - 5000:5000
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -88,7 +101,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
-        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles('**/docker/Dockerfile') }}
+        key: ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-${{ hashFiles( matrix.dockerfile ) }}
         restore-keys: |
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-${{ github.ref }}-
           ${{ env.CACHE_PREFIX }}-${{ env.CACHE_NAME }}-
@@ -102,6 +115,7 @@ jobs:
       with:
         push: true
         context: ./docker
+        file: ${{ matrix.dockerfile }}
         platforms: |
           linux/amd64
           linux/arm64

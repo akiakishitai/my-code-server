@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -u
+
+###### pet ######
+# Simple command-line snippet manager, written in Go.
+# https://github.com/knqyf263/pet
+######
+PET_VERSION="0.4.0"
+
+CLI_DIR="${TOOLS_HOME:=/app/local}/bin"
+declare -A TARGET_DICT=(
+  ["aarch64"]="pet_${PET_VERSION}_linux_arm64"
+  ["x86_64"]="pet_${PET_VERSION}_linux_amd64"
+)
+TARGET="${TARGET_DICT[$(uname --machine)]}"
+
+if ! (type pet >/dev/null 2>&1); then
+  cd "${CLI_DIR}" || exit
+
+  curl -sL \
+    "https://github.com/knqyf263/pet/releases/download/v${PET_VERSION}/${TARGET}.tar.gz" |
+    tar -xz pet
+  chmod 755 pet
+  chown 0:0 pet
+fi
+
+pet version

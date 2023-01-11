@@ -1,6 +1,0 @@
-#!/usr/bin/with-contenv bash
-
-# permission
-if [ -d "$FLUTTER_HOME" ]; then
-  chown abc:abc "$FLUTTER_HOME"
-fi

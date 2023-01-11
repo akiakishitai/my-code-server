@@ -1,0 +1,38 @@
+/*!
+ * Sauce Code Pro Nerd Font
+ *
+ * Copyright (c) 2014, Ryan L McIntyre (https://ryanlmcintyre.com).
+ *
+ * This Font Software is licensed under the SIL Open Font License, Version 1.1.
+ * This license is copied below, and is also available with a FAQ at:
+ * http://scripts.sil.org/OFL
+ */
+
+@font-face {
+  font-family: "Sauce Code Pro Nerd Font";
+  font-weight: bold;
+  font-style: italic;
+  src: local(Sauce Code Pro Nerd Font),
+       url("fonts/Sauce Code Pro Bold Italic Nerd Font Complete Mono.ttf");
+}
+@font-face {
+  font-family: "Sauce Code Pro Nerd Font";
+  font-weight: bold;
+  font-style: normal;
+  src: local(Sauce Code Pro Nerd Font),
+       url("fonts/Sauce Code Pro Bold Nerd Font Complete Mono.ttf");
+}
+@font-face {
+  font-family: "Sauce Code Pro Nerd Font";
+  font-weight: normal;
+  font-style: italic;
+  src: local(Sauce Code Pro Nerd Font),
+       url("fonts/Sauce Code Pro Italic Nerd Font Complete Mono.ttf");
+}
+@font-face {
+  font-family: "Sauce Code Pro Nerd Font";
+  font-weight: normal;
+  font-style: normal;
+  src: local(Sauce Code Pro Nerd Font),
+       url("fonts/Sauce Code Pro Nerd Font Complete Mono.ttf");
+}
