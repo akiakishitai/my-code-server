@@ -8,14 +8,10 @@ name: Docker Build
     - .dockerignore
     - .dockleignore
     - .github/workflows/docker-*.yml
-    - docker/Dockerfile*
+    - docker/**
 jobs:
   hadolint:
     name: docker / hadolint
-    strategy:
-      fail-fast: true
-      matrix:
-        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -25,12 +21,13 @@ jobs:
         dockerfile: ${{ matrix.dockerfile }}
         ignore: DL3007 DL3008 DL3018
     runs-on: ubuntu-20.04
-  build:
-    name: docker / build
     strategy:
       fail-fast: true
       matrix:
-        dockerfile: [docker/Dockerfile.build.rust]
+        dockerfile:
+        - docker/Dockerfile.build.rust
+  build:
+    name: docker / build
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -75,6 +72,11 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile:
+        - docker/Dockerfile.build.rust
   scan:
     name: docker / vulnerability scan
     needs: build
@@ -83,10 +85,6 @@ jobs:
         image: registry:2
         ports:
         - 5000:5000
-    strategy:
-      fail-fast: true
-      matrix:
-        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -148,3 +146,8 @@ jobs:
       env:
         TRIVY_NON_SSL: true
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile:
+        - docker/Dockerfile.build.rust
