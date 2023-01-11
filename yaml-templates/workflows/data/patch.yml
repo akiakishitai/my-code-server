@@ -17,3 +17,10 @@ jobs:
       #@overlay/insert before=True
       - name: Checkout code
         uses: actions/checkout@v2
+
+    #! set Dockerfiles as matrix
+    #@overlay/match missing_ok=True
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile: [docker/Dockerfile.build.rust]

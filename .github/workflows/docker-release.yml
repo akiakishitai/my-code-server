@@ -11,10 +11,6 @@ name: Docker Release
 jobs:
   update_cache:
     name: docker / update layer cache
-    strategy:
-      fail-fast: true
-      matrix:
-        dockerfile: [docker/Dockerfile.build.rust]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -59,3 +55,8 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        dockerfile:
+        - docker/Dockerfile.build.rust
